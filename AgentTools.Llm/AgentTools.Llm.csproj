@@ -4,6 +4,22 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>AgentTools.Llm</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Xians.ai</Authors>
+    <Company>Xians.ai</Company>
+    <Description>LLM tools for agent development</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/XiansAiPlatform/AgentTools.Llm</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/XiansAiPlatform/AgentTools.Llm</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>llm;ai;agents;tools</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>docs\README.md</PackageReadmeFile>
   </PropertyGroup>
+
+    <ItemGroup>
+      <None Include="README.md" Pack="true" PackagePath="docs"/>
+    </ItemGroup>
 
 </Project>

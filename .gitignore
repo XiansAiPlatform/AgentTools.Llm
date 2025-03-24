@@ -57,3 +57,6 @@ nunit-*.xml
 .env
 .env.local
 .env.*.local
+
+# Build artifacts
+/artifacts/
