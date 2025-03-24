@@ -22,19 +22,19 @@ namespace AgentTools.Llm.Providers
             if (provider == null)
                 throw new ArgumentNullException(nameof(provider));
 
-            _providers[provider.ProviderName] = provider;
+            _providers[provider.ProviderId] = provider;
         }
 
         /// <summary>
-        /// Gets a provider by name
+        /// Gets a provider by its unique identifier
         /// </summary>
-        /// <param name="providerName">The name of the provider to retrieve</param>
+        /// <param name="providerId">The unique identifier of the provider to retrieve</param>
         /// <returns>The provider instance</returns>
         /// <exception cref="KeyNotFoundException">Thrown when the provider is not found</exception>
-        public ILlmProvider GetProvider(string providerName)
+        public ILlmProvider GetProvider(string providerId)
         {
-            if (!_providers.TryGetValue(providerName, out var provider))
-                throw new KeyNotFoundException($"Provider '{providerName}' not found. Available providers: {string.Join(", ", _providers.Keys)}");
+            if (!_providers.TryGetValue(providerId, out var provider))
+                throw new KeyNotFoundException($"Provider with ID '{providerId}' not found. Available providers: {string.Join(", ", _providers.Keys)}");
 
             return provider;
         }
@@ -49,12 +49,12 @@ namespace AgentTools.Llm.Providers
         }
 
         /// <summary>
-        /// Removes a provider by name
+        /// Removes a provider by its unique identifier
         /// </summary>
-        /// <param name="providerName">The name of the provider to remove</param>
-        public void RemoveProvider(string providerName)
+        /// <param name="providerId">The unique identifier of the provider to remove</param>
+        public void RemoveProvider(string providerId)
         {
-            _providers.Remove(providerName);
+            _providers.Remove(providerId);
         }
     }
 } 

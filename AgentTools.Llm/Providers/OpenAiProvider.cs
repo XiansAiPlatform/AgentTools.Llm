@@ -1,9 +1,5 @@
-using System;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Linq;
 using AgentTools.Llm.Models;
 
 namespace AgentTools.Llm.Providers
@@ -11,13 +7,11 @@ namespace AgentTools.Llm.Providers
     public class OpenAiProvider : BaseLlmProvider
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
         private const string BaseUrl = "https://api.openai.com/v1";
 
-        public OpenAiProvider(string apiKey, string modelName, CompletionOptions? defaultOptions = null)
-            : base(modelName, defaultOptions)
+        public OpenAiProvider(string providerId, string apiKey, string modelName, CompletionOptions? defaultOptions = null)
+            : base(providerId, modelName, defaultOptions)
         {
-            _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
         }

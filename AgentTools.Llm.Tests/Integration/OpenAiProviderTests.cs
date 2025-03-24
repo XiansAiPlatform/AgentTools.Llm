@@ -20,6 +20,7 @@ namespace AgentTools.Llm.Tests.Integration
             var config = TestConfiguration.GetOpenAiConfiguration();
 
             _provider = new OpenAiProvider(
+                providerId: "gpt-35",
                 apiKey: config.ApiKey,
                 modelName: config.DefaultModel,
                 defaultOptions: new CompletionOptions
@@ -133,6 +134,13 @@ namespace AgentTools.Llm.Tests.Integration
         {
             // Assert
             Assert.Equal(TestConfiguration.GetOpenAiConfiguration().DefaultModel, _provider.ModelName);
+        }
+
+        [Fact]
+        public void ProviderId_ShouldReturnCorrectId()
+        {
+            // Assert
+            Assert.Equal("gpt-35", _provider.ProviderId);
         }
     }
 } 

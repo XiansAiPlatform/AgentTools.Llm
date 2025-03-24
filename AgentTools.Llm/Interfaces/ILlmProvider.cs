@@ -6,9 +6,14 @@ namespace AgentTools.Llm.Interfaces
     public interface ILlmProvider
     {
         /// <summary>
-        /// Gets the name of the LLM provider
+        /// Gets the name of the LLM provider (e.g., "OpenAI", "Anthropic")
         /// </summary>
         string ProviderName { get; }
+
+        /// <summary>
+        /// Gets the unique identifier for this provider instance (e.g., "gpt-35", "gpt-4")
+        /// </summary>
+        string ProviderId { get; }
 
         /// <summary>
         /// Gets the model name being used

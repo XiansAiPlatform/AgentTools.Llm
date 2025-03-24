@@ -7,15 +7,19 @@ namespace AgentTools.Llm.Providers
     public abstract class BaseLlmProvider : ILlmProvider
     {
         protected readonly string _modelName;
+        protected readonly string _providerId;
         protected readonly CompletionOptions _defaultOptions;
 
-        protected BaseLlmProvider(string modelName, CompletionOptions? defaultOptions = null)
+        protected BaseLlmProvider(string providerId, string modelName, CompletionOptions? defaultOptions = null)
         {
+            _providerId = providerId;
             _modelName = modelName;
             _defaultOptions = defaultOptions ?? new CompletionOptions();
         }
 
         public abstract string ProviderName { get; }
+
+        public string ProviderId => _providerId;
 
         public string ModelName => _modelName;
 
