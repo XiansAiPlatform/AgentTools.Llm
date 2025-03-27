@@ -37,19 +37,40 @@ namespace AgentTools.Llm.Providers
 
         protected override async Task<string> GenerateChatCompletionInternalAsync(ChatMessage[] messages, CompletionOptions options)
         {
+            // Extract the system message (if any) from the messages array
+            string? systemMessage = null;
+            var filteredMessages = new List<object>();
+
+            foreach (var message in messages)
+            {
+                if (message.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
+                {
+                    systemMessage = message.Content;
+                }
+                else
+                {
+                    filteredMessages.Add(new
+                    {
+                        role = message.Role.ToLower(), // must be: user or assistant
+                        content = message.Content
+                    });
+                }
+            }
+
+            // Prepare the request payload
             var request = new
             {
                 model = ModelName,
-                messages = messages.Select(m => new
-                {
-                    role = m.Role.ToLower(), // must be: user, assistant, or system
-                    content = m.Content
-                }),
+                system = systemMessage, // Pass the system message as a top-level parameter
+                messages = filteredMessages,
                 max_tokens = options.MaxTokens,
                 temperature = options.Temperature
             };
 
+            // Send the request to the Claude API
             var response = await SendRequestAsync($"{BaseUrl}/messages", request);
+
+            // Return the parsed response
             return response;
         }
 
@@ -76,17 +97,31 @@ namespace AgentTools.Llm.Providers
                     $"API request failed with status code {response.StatusCode}. Response: {responseContent}");
             }
 
-            var responseObj = JsonSerializer.Deserialize<JsonElement>(responseContent);
-
-            if (responseObj.TryGetProperty("content", out var contentArray) &&
-                contentArray.ValueKind == JsonValueKind.Array &&
-                contentArray.GetArrayLength() > 0 &&
-                contentArray[0].TryGetProperty("text", out var text))
+            try
             {
-                return text.GetString() ?? string.Empty;
-            }
+                var responseObj = JsonSerializer.Deserialize<JsonElement>(responseContent);
 
-            throw new Exception($"Unexpected response format: {responseContent}");
+                if (responseObj.TryGetProperty("content", out var contentArray) &&
+                    contentArray.ValueKind == JsonValueKind.Array &&
+                    contentArray.GetArrayLength() > 0)
+                {
+                    foreach (var item in contentArray.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("type", out var type) &&
+                            type.GetString() == "text" &&
+                            item.TryGetProperty("text", out var text))
+                        {
+                            return text.GetString() ?? string.Empty;
+                        }
+                    }
+                }
+
+                throw new Exception("The response does not contain a valid 'content.text' field.");
+            }
+            catch (JsonException ex)
+            {
+                throw new Exception($"Failed to parse the response: {responseContent}", ex);
+            }
         }
     }
 }
