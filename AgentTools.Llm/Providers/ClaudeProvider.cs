@@ -13,43 +13,93 @@ namespace AgentTools.Llm.Providers
             : base(providerId, modelName, defaultOptions)
         {
             _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
+            _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
         }
 
         public override string ProviderName => "Anthropic-Claude";
 
+        // Claude uses two different endpoints based on model version:
+        // - For claude-1.x: /complete with prompt-based input
+        // - For claude-2.x and claude-3.x: /messages with structured messages[]
+        // These helpers automatically select the correct endpoint.
+        private bool UseMessagesEndpoint =>
+            ModelName.StartsWith("claude-2") || ModelName.StartsWith("claude-3");
+
+        private string CompletionEndpoint =>
+            UseMessagesEndpoint ? $"{BaseUrl}/messages" : $"{BaseUrl}/complete";
+
         protected override async Task<string> GenerateCompletionInternalAsync(string prompt, CompletionOptions options)
         {
-            var request = new
-            {
-                model = ModelName,
-                prompt = prompt,
-                max_tokens_to_sample = options.MaxTokens,
-                temperature = options.Temperature,
-                stop_sequences = options.StopSequences
-            };
+            var request = UseMessagesEndpoint
+                ? BuildMessagesRequestFromPrompt(prompt, options)
+                : BuildPromptRequest(prompt, options);
 
-            var response = await SendRequestAsync($"{BaseUrl}/complete", request);
+            var response = await SendRequestAsync(CompletionEndpoint, request);
             return response;
         }
 
         protected override async Task<string> GenerateChatCompletionInternalAsync(ChatMessage[] messages, CompletionOptions options)
         {
-            // For Claude, chat messages are concatenated into a single prompt
-            var prompt = string.Join("\n", messages.Select(m => $"{m.Role}: {m.Content}"));
+            var request = UseMessagesEndpoint
+                ? BuildMessagesRequest(messages, options)
+                : BuildPromptRequestFromMessages(messages, options);
 
-            var request = new
-            {
-                model = ModelName,
-                prompt = prompt,
-                max_tokens_to_sample = options.MaxTokens,
-                temperature = options.Temperature,
-                stop_sequences = options.StopSequences
-            };
-
-            var response = await SendRequestAsync($"{BaseUrl}/complete", request);
+            var response = await SendRequestAsync(CompletionEndpoint, request);
             return response;
         }
+
+        private object BuildPromptRequest(string prompt, CompletionOptions options) => new
+        {
+            model = ModelName,
+            prompt = prompt,
+            max_tokens_to_sample = options.MaxTokens,
+            temperature = options.Temperature,
+            stop_sequences = options.StopSequences
+        };
+
+        private object BuildPromptRequestFromMessages(ChatMessage[] messages, CompletionOptions options)
+        {
+            var promptBuilder = new StringBuilder();
+
+            foreach (var message in messages)
+            {
+                var role = message.Role.ToLower() switch
+                {
+                    "user" => "Human",
+                    "assistant" => "Assistant",
+                    _ => message.Role
+                };
+                promptBuilder.AppendLine($"{role}: {message.Content}");
+            }
+
+            promptBuilder.Append("Assistant:");
+
+            return BuildPromptRequest(promptBuilder.ToString(), options);
+        }
+
+        private object BuildMessagesRequest(ChatMessage[] messages, CompletionOptions options) => new
+        {
+            model = ModelName,
+            messages = messages.Select(m => new
+            {
+                role = m.Role.ToLower(), // must be: user, assistant, system
+                content = m.Content
+            }),
+            max_tokens = options.MaxTokens,
+            temperature = options.Temperature
+        };
+
+        private object BuildMessagesRequestFromPrompt(string prompt, CompletionOptions options) => new
+        {
+            model = ModelName,
+            messages = new[]
+            {
+                new { role = "user", content = prompt }
+            },
+            max_tokens = options.MaxTokens,
+            temperature = options.Temperature
+        };
 
         private async Task<string> SendRequestAsync<T>(string url, T request)
         {
@@ -58,6 +108,7 @@ namespace AgentTools.Llm.Providers
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true
             });
+
             var requestContent = new StringContent(json, Encoding.UTF8, "application/json");
 
             Console.WriteLine($"Sending request to: {url}");
@@ -75,10 +126,17 @@ namespace AgentTools.Llm.Providers
 
             var responseObj = JsonSerializer.Deserialize<JsonElement>(responseContent);
 
-            // Handle Claude's response format
             if (responseObj.TryGetProperty("completion", out var completion))
             {
                 return completion.GetString() ?? string.Empty;
+            }
+
+            if (responseObj.TryGetProperty("content", out var contentArray) &&
+                contentArray.ValueKind == JsonValueKind.Array &&
+                contentArray.GetArrayLength() > 0 &&
+                contentArray[0].TryGetProperty("text", out var text))
+            {
+                return text.GetString() ?? string.Empty;
             }
 
             throw new Exception($"Unexpected response format: {responseContent}");
