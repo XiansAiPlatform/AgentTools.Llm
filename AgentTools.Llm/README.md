@@ -112,6 +112,38 @@ var options = new CompletionOptions
 var response = await provider.GenerateCompletionAsync("Write a short poem.", options);
 ```
 
+These parameters control how a Large Language Model (LLM) generates text. Here’s what each one does:
+
+Temperature = 0.2f
+- Controls randomness in the output.
+- A lower value (close to 0) makes the model more deterministic, meaning it picks the most probable words.
+- A higher value (closer to 1) makes responses more diverse and creative.
+- 0.2 means the model will generate more predictable and focused outputs.
+
+MaxTokens = 100
+- Sets the maximum number of tokens (words, punctuation, or parts of words) the model can generate in a response.
+- 100 tokens means the response length will be limited to around 100 words or shorter.
+
+TopP = 0.9f (Nucleus Sampling)
+- Controls diversity by sampling from the top p probability mass instead of selecting from all possible words.
+- When TopP = 0.9, the model considers only the most probable 90% of words and ignores the least likely 10%.
+- This balances diversity and coherence.
+  
+FrequencyPenalty = 0.5f
+- Reduces the likelihood of the model repeating words.
+- A higher value discourages repetition.
+- 0.5 applies a moderate penalty, making outputs less redundant.
+
+PresencePenalty = 0.5f
+- Encourages the model to introduce new words/concepts.
+- A higher value makes it more likely to explore new topics.
+- 0.5 gives a slight push for diverse wording.
+
+StopSequences = new[] { “\n” }
+- Defines a sequence that stops the response generation.
+- ”\n” (newline) means the model will stop generating when it reaches a line break.
+- Useful for ensuring short, structured responses.
+ 
 ## Configuration
 
 ### OpenAI Configuration
