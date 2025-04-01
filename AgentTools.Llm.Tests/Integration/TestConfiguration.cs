@@ -22,13 +22,25 @@ namespace AgentTools.Llm.Tests.Integration
             var organizationId = Environment.GetEnvironmentVariable("OPENAI_ORG_ID");
 
             return new OpenAiConfiguration(apiKey, modelName, organizationId);
+        }        
+        
+        public static ClaudeConfiguration GetClaudeConfiguration()
+        {
+            var apiKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY")
+                ?? throw new InvalidOperationException("CLAUDE_API_KEY environment variable is not set");
+        
+            var modelName = Environment.GetEnvironmentVariable("CLAUDE_TEST_MODEL")
+                ?? "claude-3-haiku-20240307";
+        
+            return new ClaudeConfiguration(apiKey, modelName);
         }
 
         public static void ValidateEnvironment()
         {
             var requiredVars = new[]
             {
-                "OPENAI_API_KEY"
+                "OPENAI_API_KEY",
+                "CLAUDE_API_KEY"
             };
 
             foreach (var varName in requiredVars)
